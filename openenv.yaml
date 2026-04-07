@@ -1,0 +1,141 @@
+name: code-review-env
+version: "1.0.0"
+description: >
+  A deterministic reinforcement-learning environment in which an AI agent
+  performs multi-step code reviews across Python, SQL, and JavaScript.
+  The agent is rewarded for correctly identifying bugs, security
+  vulnerabilities, and performance issues and penalised for false positives
+  and missed critical findings.
+tags:
+  - openenv
+  - code-review
+  - reinforcement-learning
+  - llm-evaluation
+  - security
+  - python
+  - javascript
+  - sql
+
+# ---------------------------------------------------------------------------
+# Tasks
+# ---------------------------------------------------------------------------
+tasks:
+  - name: python_bug_detection
+    language: python
+    difficulty: easy
+    max_steps: 6
+    description: >
+      Find two logic bugs in a Python utility module: an off-by-one error in
+      a range() call and a ZeroDivisionError on an empty-list path.
+
+  - name: sql_security_review
+    language: sql
+    difficulty: medium
+    max_steps: 8
+    description: >
+      Identify three security vulnerabilities in a Python/SQLite database
+      access module: a hardcoded credential and two SQL-injection vectors
+      (string concatenation and f-string interpolation).
+
+  - name: js_comprehensive_review
+    language: javascript
+    difficulty: hard
+    max_steps: 10
+    description: >
+      Perform a comprehensive review of an Express.js router file containing
+      five issues: an N+1 query, SQL injection, internal error leakage,
+      missing authentication middleware, and a missing await on an async
+      INSERT.
+
+# ---------------------------------------------------------------------------
+# Reward
+# ---------------------------------------------------------------------------
+reward:
+  min: -1.0
+  max: 1.0
+  scoring: partial
+  breakdown:
+    true_positive:        "weight × severity_modifier (critical=0.40, major=0.25, minor=0.10)"
+    fix_quality_bonus:    "+0.05 per issue when suggestion length > 20 chars"
+    severity_accuracy:    "+0.05 × severity_modifier per matched issue"
+    false_positive:       "-0.10 per unmatched reported issue"
+    missed_critical:      "-0.15 per critical ground-truth issue not found at done"
+    assessment_bonus:     "+0.05 when overall_assessment length > 30 chars at done"
+
+# ---------------------------------------------------------------------------
+# Observation space
+# ---------------------------------------------------------------------------
+observation_space:
+  type: object
+  fields:
+    code:               "string — full source code under review"
+    language:           "enum — python | javascript | sql"
+    task_description:   "string — natural-language task instructions"
+    step:               "integer — current step index (0-based)"
+    max_steps:          "integer — maximum allowed steps for this task"
+    issues_found_so_far: "list[Issue] — all issues reported in previous steps"
+    last_reward:        "float — scalar reward from the previous step"
+    cumulative_reward:  "float — sum of all rewards so far"
+    done:               "boolean"
+    message:            "string — server feedback from the previous step"
+
+# ---------------------------------------------------------------------------
+# Action space
+# ---------------------------------------------------------------------------
+action_space:
+  type: object
+  fields:
+    issues:
+      type: "list[Issue]"
+      item_fields:
+        issue_type:   "enum — bug | security | performance | style"
+        severity:     "enum — critical | major | minor"
+        line_start:   "integer"
+        line_end:     "integer"
+        description:  "string"
+        suggestion:   "string (optional)"
+    overall_assessment: "string (optional) — holistic summary, scored at done"
+    done:               "boolean — set true to end the episode"
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+endpoints:
+  reset:
+    method: POST
+    path: /reset
+    body: '{ "task_name": "<string>" }'
+    returns: "observation + task_name"
+
+  step:
+    method: POST
+    path: /step
+    body: "CodeReviewAction JSON"
+    returns: "observation + reward + done + info"
+    errors:
+      400: "episode already done or not yet started"
+
+  state:
+    method: GET
+    path: /state
+    returns: "full EpisodeState snapshot"
+
+  tasks:
+    method: GET
+    path: /tasks
+    returns: "task registry metadata"
+
+  health:
+    method: GET
+    path: /health
+    returns: '{ "status": "ok", "version": "1.0.0" }'
+
+# ---------------------------------------------------------------------------
+# Infrastructure
+# ---------------------------------------------------------------------------
+infra:
+  runtime: python3.11
+  framework: fastapi
+  port: 7860
+  memory: 2gb
+  vcpu: 2
