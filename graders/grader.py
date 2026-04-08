@@ -137,7 +137,7 @@ def grade_step(
 
     # --- Aggregate and clamp ---
     raw_total = tp_score + fix_quality + sev_accuracy + fp_penalty + missed_penalty + assess_bonus
-    total     = max(-1.0, min(1.0, raw_total))
+    total     = max(-0.999, min(0.999, round(raw_total, 4)))
 
     breakdown = RewardBreakdown(
         true_positive_score    = round(tp_score,     4),
@@ -173,4 +173,5 @@ def compute_episode_score(
     if max_possible <= 0:
         return 0.0
 
-    return max(0.0, min(1.0, cumulative_reward / max_possible))
+    score = cumulative_reward / max_possible
+    return max(0.001, min(0.999, round(score, 4)))

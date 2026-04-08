@@ -94,16 +94,14 @@ class CodeReviewEnv:
             feedback  = feedback,
         )
 
-        episode_score = 0.0
-        if done:
-            episode_score = compute_episode_score(
-                self._cumulative_reward,
-                self._cfg["ground_truth"],
-            )
-            self._success = episode_score >= 0.5
+        episode_score = compute_episode_score(
+            self._cumulative_reward,
+            self._cfg["ground_truth"],
+        )
+        self._success = episode_score > 0.5 if done else False
 
         info = {
-            "episode_score":   episode_score,
+            "score":   float(episode_score),
             "matched_indices": list(self._matched_gt_indices),
             "total_gt_issues": len(self._cfg["ground_truth"]),
         }
