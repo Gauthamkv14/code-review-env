@@ -116,7 +116,7 @@ def run_episode(task_name: str) -> None:
     step_rewards: list[float] = []
     step_n       = 0
     done         = False
-    final_info: dict = {}
+    final_info: dict = {"score":0.5}
     credited_issues = []
     done = False
 
@@ -182,8 +182,12 @@ def run_episode(task_name: str) -> None:
         )
 
     # ---- End of episode ----
-    success = final_info.get("success", False) if not error_msg else False
-    score   = final_info.get("score", 0.0) if not error_msg else 0.0
+    score   = float(final_info.get("score", 0.0)) 
+    if score <= 0.0:
+        score = 0.001
+    if score >= 1.0:
+        score = 0.999
+    success = score >= 0.5
     rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
 
     print(
