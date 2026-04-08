@@ -262,3 +262,12 @@ They also stress-test tokenisation and language-switching in LLMs that may be st
 
 ### Why a deterministic grader?
 LLM-as-judge scoring is non-reproducible: the same model, same weights, different run → different scores. A deterministic grader based on line-range overlap and enum matching gives bit-identical results across every evaluation, making leaderboard comparisons meaningful and debugging straightforward. The cost is that the grader cannot credit paraphrased-but-correct descriptions — that trade-off is intentional.
+
+### Why severity weighting?
+Not all issues are equal. A missing `await` that silently swallows errors is more dangerous than a style inconsistency. The reward function teaches agents to prioritise correctly.
+
+---
+
+## 📄 License
+
+MIT
